@@ -1,0 +1,1172 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: HFT Bitcoin prediction & paper trading API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: market
+    description: Live market data
+  - name: paper
+    description: Paper trading
+  - name: ai
+    description: AI assistant
+  - name: btc
+    description: Bitcoin chain data and S2F model
+  - name: wallet
+    description: Wallet creation, lookup, and broadcast
+  - name: lightning
+    description: Lightning network tools
+  - name: onchain
+    description: On-chain assets (Ordinals, BRC-20, Runes)
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /snapshot:
+    get:
+      operationId: getSnapshot
+      tags: [market]
+      summary: Live market snapshot with predictions and paper state
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Snapshot"
+  /trades:
+    get:
+      operationId: getTrades
+      tags: [paper]
+      summary: List of paper trades (most recent first)
+      responses:
+        "200":
+          description: Trades
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trades:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Trade"
+                required: [trades]
+  /paper/config:
+    post:
+      operationId: updatePaperConfig
+      tags: [paper]
+      summary: Update paper trading configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaperConfigInput"
+      responses:
+        "200":
+          description: Updated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperState"
+  /paper/reset:
+    post:
+      operationId: resetPaper
+      tags: [paper]
+      summary: Reset paper trading account
+      responses:
+        "200":
+          description: Reset state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperState"
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: Ask the AI assistant about strategy and market state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+              required: [message]
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiReply"
+  /ai/insights:
+    get:
+      operationId: getAiInsights
+      tags: [ai]
+      summary: Get current AI strategy adjustments and notes
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiInsights"
+  /btc/mempool:
+    get:
+      operationId: getMempool
+      tags: [btc]
+      summary: Mempool stats, recent blocks, fees, difficulty
+      responses:
+        "200":
+          description: Mempool data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MempoolData"
+  /btc/stock-to-flow:
+    get:
+      operationId: getStockToFlow
+      tags: [btc]
+      summary: Stock-to-flow series and current model price
+      responses:
+        "200":
+          description: S2F data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockToFlowData"
+  /wallet/address/{address}:
+    get:
+      operationId: getWalletAddress
+      tags: [wallet]
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: network
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Address info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddressInfo"
+  /wallet/create:
+    post:
+      operationId: createWallet
+      tags: [wallet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWalletInput"
+      responses:
+        "200":
+          description: Wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletData"
+  /wallet/multisig:
+    post:
+      operationId: createMultisig
+      tags: [wallet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMultisigInput"
+      responses:
+        "200":
+          description: Multisig data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MultisigData"
+  /wallet/balance:
+    post:
+      operationId: walletBalance
+      tags: [wallet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletBalanceInput"
+      responses:
+        "200":
+          description: Balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletBalance"
+  /wallet/send:
+    post:
+      operationId: walletSend
+      tags: [wallet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletSendInput"
+      responses:
+        "200":
+          description: Send result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletSendResult"
+  /lightning/network:
+    get:
+      operationId: getLightningNetwork
+      tags: [lightning]
+      responses:
+        "200":
+          description: Lightning stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LightningNetwork"
+  /lightning/decode:
+    post:
+      operationId: decodeLightningInvoice
+      tags: [lightning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoice:
+                  type: string
+              required: [invoice]
+      responses:
+        "200":
+          description: Decoded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecodedInvoice"
+  /lightning/lnurl:
+    post:
+      operationId: resolveLnurl
+      tags: [lightning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lnurl:
+                  type: string
+              required: [lnurl]
+      responses:
+        "200":
+          description: LNURL resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LnurlResolved"
+  /lightning/lnurl-pay:
+    post:
+      operationId: lnurlPay
+      tags: [lightning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callback:
+                  type: string
+                amountSats:
+                  type: number
+                comment:
+                  type: string
+              required: [callback, amountSats]
+      responses:
+        "200":
+          description: LNURL pay result with invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LnurlPayResult"
+  /onchain/assets/{address}:
+    get:
+      operationId: getOnchainAssets
+      tags: [onchain]
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: On-chain assets at address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnchainAssets"
+  /chart/forecast:
+    get:
+      operationId: getChartForecast
+      tags: [market]
+      summary: Multi-timeframe chart forecast (5m..1mo)
+      responses:
+        "200":
+          description: Chart forecast bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartForecast"
+  /predictions/stats:
+    get:
+      operationId: getPredictionStats
+      tags: [predictions]
+      responses:
+        "200":
+          description: Hit/miss accuracy stats per horizon, plus time buckets and recent resolved predictions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionStats"
+  /predictions/reset:
+    post:
+      operationId: resetPredictionStats
+      tags: [predictions]
+      responses:
+        "200":
+          description: Tracker cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    VenuePrice:
+      type: object
+      properties:
+        venue:
+          type: string
+        type:
+          type: string
+          description: cex or dex
+        bid:
+          type: number
+        ask:
+          type: number
+        mid:
+          type: number
+        last:
+          type: number
+        connected:
+          type: boolean
+        ageMs:
+          type: integer
+      required: [venue, type, bid, ask, mid, last, connected, ageMs]
+    OrderBookStats:
+      type: object
+      properties:
+        bestBid:
+          type: number
+        bestAsk:
+          type: number
+        bidSize:
+          type: number
+        askSize:
+          type: number
+        spread:
+          type: number
+        imbalance:
+          type: number
+      required: [bestBid, bestAsk, bidSize, askSize, spread, imbalance]
+    PredictionHorizon:
+      type: object
+      properties:
+        horizonSeconds:
+          type: integer
+        predictedPrice:
+          type: number
+        deltaBps:
+          type: number
+        direction:
+          type: string
+          description: up, down, or flat
+        confidence:
+          type: number
+        signal:
+          type: string
+          description: BUY, SELL, or HOLD
+      required:
+        - horizonSeconds
+        - predictedPrice
+        - deltaBps
+        - direction
+        - confidence
+        - signal
+    StrategyContribution:
+      type: object
+      properties:
+        name:
+          type: string
+        score:
+          type: number
+        note:
+          type: string
+      required: [name, score, note]
+    Microprice:
+      type: object
+      properties:
+        value:
+          type: number
+        updatedAt:
+          type: integer
+        updatesPerSecond:
+          type: number
+      required: [value, updatedAt, updatesPerSecond]
+    Position:
+      type: object
+      properties:
+        id:
+          type: string
+        side:
+          type: string
+        entryPrice:
+          type: number
+        size:
+          type: number
+        notional:
+          type: number
+        stopLoss:
+          type: number
+        takeProfit:
+          type: number
+        openedAt:
+          type: integer
+        unrealizedPnl:
+          type: number
+        confidence:
+          type: number
+        horizonSeconds:
+          type: integer
+        strategyId:
+          type: string
+        strategyLabel:
+          type: string
+        expiresAt:
+          type: integer
+          format: int64
+      required:
+        - id
+        - side
+        - entryPrice
+        - size
+        - notional
+        - stopLoss
+        - takeProfit
+        - openedAt
+        - unrealizedPnl
+        - confidence
+        - horizonSeconds
+        - strategyId
+        - strategyLabel
+        - expiresAt
+    PaperConfigInput:
+      type: object
+      properties:
+        initialBalance:
+          type: number
+        entrySize:
+          type: number
+        autoTrade:
+          type: boolean
+        minConfidence:
+          type: number
+    StrategyState:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        family: { type: string }
+        allocationPct: { type: number }
+        allocatedBalance: { type: number }
+        realizedPnl: { type: number }
+        unrealizedPnl: { type: number }
+        openCount: { type: integer }
+        closedCount: { type: integer }
+        winCount: { type: integer }
+        lossCount: { type: integer }
+        enabled: { type: boolean }
+      required: [id, label, family, allocationPct, allocatedBalance, realizedPnl, unrealizedPnl, openCount, closedCount, winCount, lossCount, enabled]
+    PaperState:
+      type: object
+      properties:
+        balance:
+          type: number
+        initialBalance:
+          type: number
+        entrySize:
+          type: number
+        autoTrade:
+          type: boolean
+        minConfidence:
+          type: number
+        equity:
+          type: number
+        stopped:
+          type: boolean
+        openPosition:
+          oneOf:
+            - $ref: "#/components/schemas/Position"
+            - type: "null"
+        openPositions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Position"
+        winCount:
+          type: integer
+        lossCount:
+          type: integer
+        winRate:
+          type: number
+        totalPnl:
+          type: number
+        tradesCount:
+          type: integer
+        strategies:
+          type: array
+          items:
+            $ref: "#/components/schemas/StrategyState"
+      required:
+        - balance
+        - initialBalance
+        - entrySize
+        - autoTrade
+        - minConfidence
+        - equity
+        - stopped
+        - openPositions
+        - winCount
+        - lossCount
+        - winRate
+        - totalPnl
+        - tradesCount
+        - strategies
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+        side:
+          type: string
+        entryPrice:
+          type: number
+        exitPrice:
+          type: number
+        size:
+          type: number
+        notional:
+          type: number
+        pnl:
+          type: number
+        pnlPct:
+          type: number
+        openedAt:
+          type: integer
+        closedAt:
+          type: integer
+        durationMs:
+          type: integer
+        reason:
+          type: string
+        confidence:
+          type: number
+        horizonSeconds:
+          type: integer
+        strategyId:
+          type: string
+        strategyLabel:
+          type: string
+      required:
+        - id
+        - side
+        - entryPrice
+        - exitPrice
+        - size
+        - notional
+        - pnl
+        - pnlPct
+        - openedAt
+        - closedAt
+        - durationMs
+        - reason
+        - confidence
+        - horizonSeconds
+        - strategyId
+        - strategyLabel
+    Snapshot:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+        microprice:
+          $ref: "#/components/schemas/Microprice"
+        book:
+          $ref: "#/components/schemas/OrderBookStats"
+        venues:
+          type: array
+          items:
+            $ref: "#/components/schemas/VenuePrice"
+        predictions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PredictionHorizon"
+        strategies:
+          type: array
+          items:
+            $ref: "#/components/schemas/StrategyContribution"
+        paper:
+          $ref: "#/components/schemas/PaperState"
+        recentTrades:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trade"
+        chartForecast:
+          $ref: "#/components/schemas/ChartForecast"
+      required:
+        - timestamp
+        - microprice
+        - book
+        - venues
+        - predictions
+        - strategies
+        - paper
+        - recentTrades
+        - chartForecast
+    AiReply:
+      type: object
+      properties:
+        reply:
+          type: string
+        appliedAdjustments:
+          type: array
+          items:
+            type: string
+      required: [reply, appliedAdjustments]
+    AiInsights:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            type: string
+        recommendedMinConfidence:
+          type: number
+        recommendedEntrySize:
+          type: number
+        updatedAt:
+          type: integer
+      required:
+        - notes
+        - recommendedMinConfidence
+        - recommendedEntrySize
+        - updatedAt
+    MempoolBlock:
+      type: object
+      properties:
+        id: { type: string }
+        height: { type: integer }
+        timestamp: { type: integer }
+        txCount: { type: integer }
+        size: { type: integer }
+        weight: { type: integer }
+      required: [id, height, timestamp, txCount, size, weight]
+    FeeEstimates:
+      type: object
+      properties:
+        fastestFee: { type: number }
+        halfHourFee: { type: number }
+        hourFee: { type: number }
+        economyFee: { type: number }
+        minimumFee: { type: number }
+      required: [fastestFee, halfHourFee, hourFee, economyFee, minimumFee]
+    DifficultyAdjustment:
+      type: object
+      properties:
+        progressPercent: { type: number }
+        difficultyChange: { type: number }
+        remainingBlocks: { type: number }
+        estimatedRetargetDate: { type: number }
+      required: [progressPercent, difficultyChange, remainingBlocks, estimatedRetargetDate]
+    MempoolStats:
+      type: object
+      properties:
+        count: { type: integer }
+        vsize: { type: number }
+        totalFee: { type: number }
+        feeHistogram:
+          type: array
+          items:
+            type: array
+            items: { type: number }
+      required: [count, vsize, totalFee, feeHistogram]
+    MempoolData:
+      type: object
+      properties:
+        tipHeight: { type: integer }
+        mempool: { $ref: "#/components/schemas/MempoolStats" }
+        blocks:
+          type: array
+          items: { $ref: "#/components/schemas/MempoolBlock" }
+        fees: { $ref: "#/components/schemas/FeeEstimates" }
+        difficulty: { $ref: "#/components/schemas/DifficultyAdjustment" }
+      required: [tipHeight, mempool, blocks, fees, difficulty]
+    S2FPoint:
+      type: object
+      properties:
+        ts: { type: number }
+        height: { type: integer }
+        supply: { type: number }
+        flow: { type: number }
+        s2f: { type: number }
+        modelPrice: { type: number }
+        marketPrice:
+          oneOf:
+            - { type: number }
+            - { type: "null" }
+      required: [ts, height, supply, flow, s2f, modelPrice]
+    StockToFlowData:
+      type: object
+      properties:
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/S2FPoint" }
+        modelPrice: { type: number }
+        marketPrice: { type: number }
+        currentS2F: { type: number }
+        nextHalving:
+          oneOf:
+            - type: object
+              properties:
+                height: { type: integer }
+                date: { type: number }
+                estimatedDays: { type: number }
+              required: [height, date, estimatedDays]
+            - { type: "null" }
+      required: [points, modelPrice, marketPrice, currentS2F]
+    AddressTx:
+      type: object
+      properties:
+        txid: { type: string }
+        confirmed: { type: boolean }
+        blockHeight:
+          oneOf: [{ type: integer }, { type: "null" }]
+        blockTime:
+          oneOf: [{ type: integer }, { type: "null" }]
+        feeSats: { type: number }
+        inputs: { type: integer }
+        outputs: { type: integer }
+      required: [txid, confirmed, feeSats, inputs, outputs]
+    AddressInfo:
+      type: object
+      properties:
+        address: { type: string }
+        network: { type: string }
+        confirmedSats: { type: number }
+        unconfirmedSats: { type: number }
+        totalSats: { type: number }
+        txCount: { type: integer }
+        recentTxs:
+          type: array
+          items: { $ref: "#/components/schemas/AddressTx" }
+      required: [address, network, confirmedSats, unconfirmedSats, totalSats, txCount, recentTxs]
+    DerivedAddress:
+      type: object
+      properties:
+        index: { type: integer }
+        path: { type: string }
+        address: { type: string }
+        publicKey: { type: string }
+        change: { type: integer }
+      required: [index, path, address, publicKey, change]
+    CreateWalletInput:
+      type: object
+      properties:
+        bip: { type: integer }
+        network: { type: string }
+        strength: { type: integer }
+        passphrase: { type: string }
+        mnemonic: { type: string }
+        count: { type: integer }
+      required: [bip]
+    WalletData:
+      type: object
+      properties:
+        bip: { type: integer }
+        scheme: { type: string }
+        network: { type: string }
+        mnemonic: { type: string }
+        seedHex: { type: string }
+        derivationPath: { type: string }
+        xpub: { type: string }
+        fingerprint: { type: string }
+        receive:
+          type: array
+          items: { $ref: "#/components/schemas/DerivedAddress" }
+        change:
+          type: array
+          items: { $ref: "#/components/schemas/DerivedAddress" }
+      required: [bip, scheme, network, mnemonic, seedHex, derivationPath, xpub, fingerprint, receive, change]
+    CreateMultisigInput:
+      type: object
+      properties:
+        m: { type: integer }
+        cosigners: { type: integer }
+        network: { type: string }
+        type: { type: string }
+        mnemonics:
+          type: array
+          items: { type: string }
+        passphrases:
+          type: array
+          items: { type: string }
+        publicKeysHex:
+          type: array
+          items: { type: string }
+      required: [m]
+    MultisigSigner:
+      type: object
+      properties:
+        index: { type: integer }
+        mnemonic: { type: string }
+        publicKey: { type: string }
+        xpub: { type: string }
+        derivationPath: { type: string }
+      required: [index, mnemonic, publicKey, xpub, derivationPath]
+    MultisigData:
+      type: object
+      properties:
+        m: { type: integer }
+        n: { type: integer }
+        type: { type: string }
+        network: { type: string }
+        address: { type: string }
+        redeemScript: { type: string }
+        witnessScript: { type: string }
+        signers:
+          type: array
+          items: { $ref: "#/components/schemas/MultisigSigner" }
+      required: [m, n, type, network, address, redeemScript, signers]
+    WalletBalanceInput:
+      type: object
+      properties:
+        mnemonic: { type: string }
+        bip: { type: integer }
+        network: { type: string }
+        scanCount: { type: integer }
+        passphrase: { type: string }
+      required: [mnemonic, bip]
+    WalletBalanceAddress:
+      type: object
+      properties:
+        address: { type: string }
+        derivationPath: { type: string }
+        sats: { type: number }
+        txCount: { type: integer }
+      required: [address, derivationPath, sats, txCount]
+    WalletBalance:
+      type: object
+      properties:
+        totalSats: { type: number }
+        confirmedSats: { type: number }
+        unconfirmedSats: { type: number }
+        utxoCount: { type: integer }
+        addresses:
+          type: array
+          items: { $ref: "#/components/schemas/WalletBalanceAddress" }
+      required: [totalSats, confirmedSats, unconfirmedSats, utxoCount, addresses]
+    WalletSendInput:
+      type: object
+      properties:
+        mnemonic: { type: string }
+        bip: { type: integer }
+        network: { type: string }
+        passphrase: { type: string }
+        toAddress: { type: string }
+        amountSats: { type: number }
+        feeRate: { type: number }
+        scanCount: { type: integer }
+        changeIndex: { type: integer }
+      required: [mnemonic, bip, toAddress, amountSats, feeRate]
+    WalletSendResult:
+      type: object
+      properties:
+        txid: { type: string }
+        hex: { type: string }
+        fee: { type: number }
+        vsize: { type: number }
+        inputsUsed: { type: integer }
+        changeSats: { type: number }
+      required: [txid, hex, fee, vsize, inputsUsed, changeSats]
+    LightningNode:
+      type: object
+      properties:
+        publicKey: { type: string }
+        alias: { type: string }
+        channels: { type: integer }
+        capacity: { type: number }
+        city:
+          oneOf: [{ type: string }, { type: "null" }]
+        country:
+          oneOf: [{ type: string }, { type: "null" }]
+      required: [publicKey, alias, channels, capacity]
+    LightningNetwork:
+      type: object
+      properties:
+        stats:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - { type: "null" }
+        topNodes:
+          type: array
+          items: { $ref: "#/components/schemas/LightningNode" }
+      required: [topNodes]
+    DecodedInvoice:
+      type: object
+      properties:
+        network: { type: string }
+        paymentHash: { type: string }
+        amountSats:
+          oneOf: [{ type: number }, { type: "null" }]
+        description:
+          oneOf: [{ type: string }, { type: "null" }]
+        payeeNodeKey:
+          oneOf: [{ type: string }, { type: "null" }]
+        expiry: { type: number }
+        timestamp: { type: number }
+        expiresAt: { type: number }
+        routeHints: { type: integer }
+        features:
+          type: array
+          items: { type: string }
+        raw: { type: string }
+      required: [network, paymentHash, expiry, timestamp, expiresAt, routeHints, features, raw]
+    LnurlResolved:
+      type: object
+      properties:
+        type: { type: string }
+        url: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+      required: [type, url, data]
+    LnurlPayResult:
+      type: object
+      properties:
+        pr: { type: string }
+        routes:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        decoded: { $ref: "#/components/schemas/DecodedInvoice" }
+      required: [pr, routes, decoded]
+    Inscription:
+      type: object
+      properties:
+        id: { type: string }
+        number: { type: integer }
+        contentType: { type: string }
+        contentLength: { type: integer }
+        genesisBlockHeight: { type: integer }
+        genesisAddress: { type: string }
+        txid: { type: string }
+        outputValue: { type: number }
+        satOrdinal: { type: string }
+        satRarity: { type: string }
+        curatedUrl: { type: string }
+      required: [id, number, contentType, contentLength, genesisBlockHeight, genesisAddress, txid, outputValue, satOrdinal, satRarity, curatedUrl]
+    Brc20Balance:
+      type: object
+      properties:
+        ticker: { type: string }
+        availableBalance: { type: string }
+        transferrableBalance: { type: string }
+        overallBalance: { type: string }
+      required: [ticker, availableBalance, transferrableBalance, overallBalance]
+    RuneBalance:
+      type: object
+      properties:
+        rune: { type: string }
+        symbol: { type: string }
+        amount: { type: string }
+        divisibility: { type: integer }
+      required: [rune, symbol, amount, divisibility]
+    OnchainAssets:
+      type: object
+      properties:
+        address: { type: string }
+        inscriptions:
+          type: array
+          items: { $ref: "#/components/schemas/Inscription" }
+        brc20:
+          type: array
+          items: { $ref: "#/components/schemas/Brc20Balance" }
+        runes:
+          type: array
+          items: { $ref: "#/components/schemas/RuneBalance" }
+      required: [address, inscriptions, brc20, runes]
+    PredictionBucket:
+      type: object
+      properties:
+        ts: { type: integer, format: int64 }
+        hits: { type: integer }
+        misses: { type: integer }
+        flats: { type: integer }
+      required: [ts, hits, misses, flats]
+    HorizonStats:
+      type: object
+      properties:
+        horizonSeconds: { type: integer }
+        total: { type: integer }
+        hits: { type: integer }
+        misses: { type: integer }
+        flats: { type: integer }
+        accuracy: { type: number }
+        decisive: { type: integer }
+        decisiveAccuracy: { type: number }
+        avgConfidence: { type: number }
+        avgAbsErrorBps: { type: number }
+        pending: { type: integer }
+        upCalls: { type: integer }
+        downCalls: { type: integer }
+        flatCalls: { type: integer }
+        upHits: { type: integer }
+        downHits: { type: integer }
+        buckets:
+          type: array
+          items: { $ref: "#/components/schemas/PredictionBucket" }
+      required: [horizonSeconds, total, hits, misses, flats, accuracy, decisive, decisiveAccuracy, avgConfidence, avgAbsErrorBps, pending, upCalls, downCalls, flatCalls, upHits, downHits, buckets]
+    ResolvedPrediction:
+      type: object
+      properties:
+        id: { type: string }
+        horizonSeconds: { type: integer }
+        createdAt: { type: integer, format: int64 }
+        resolvedAt: { type: integer, format: int64 }
+        entryPrice: { type: number }
+        exitPrice: { type: number }
+        predictedDirection: { type: string, enum: [up, down, flat] }
+        actualDirection: { type: string, enum: [up, down, flat] }
+        actualDeltaBps: { type: number }
+        predictedDeltaBps: { type: number }
+        outcome: { type: string, enum: [hit, miss, flat] }
+        confidence: { type: number }
+      required: [id, horizonSeconds, createdAt, resolvedAt, entryPrice, exitPrice, predictedDirection, actualDirection, actualDeltaBps, predictedDeltaBps, outcome, confidence]
+    ChartIndicators:
+      type: object
+      properties:
+        sma20: { type: number }
+        ema9: { type: number }
+        ema21: { type: number }
+        ema50: { type: number }
+        rsi14: { type: number }
+        macd: { type: number }
+        macdSignal: { type: number }
+        macdHist: { type: number }
+        bbUpper: { type: number }
+        bbMiddle: { type: number }
+        bbLower: { type: number }
+        slopeBpsPerBar: { type: number }
+        atrBps: { type: number }
+      required: [sma20, ema9, ema21, ema50, rsi14, macd, macdSignal, macdHist, bbUpper, bbMiddle, bbLower, slopeBpsPerBar, atrBps]
+    ChartPrediction:
+      type: object
+      properties:
+        label: { type: string }
+        intervalSeconds: { type: integer }
+        currentPrice: { type: number }
+        predictedPrice: { type: number }
+        deltaBps: { type: number }
+        direction: { type: string, enum: [up, down, flat] }
+        confidence: { type: number }
+        signal: { type: string, enum: [BUY, SELL, HOLD] }
+        score: { type: number }
+        reasons:
+          type: array
+          items: { type: string }
+        indicators: { $ref: "#/components/schemas/ChartIndicators" }
+        candleCount: { type: integer }
+        resolvesAt: { type: integer, format: int64 }
+      required: [label, intervalSeconds, currentPrice, predictedPrice, deltaBps, direction, confidence, signal, score, reasons, indicators, candleCount, resolvesAt]
+    ChartForecast:
+      type: object
+      properties:
+        updatedAt: { type: integer, format: int64 }
+        predictions:
+          type: array
+          items: { $ref: "#/components/schemas/ChartPrediction" }
+      required: [updatedAt, predictions]
+    PredictionStats:
+      type: object
+      properties:
+        horizons:
+          type: array
+          items: { $ref: "#/components/schemas/HorizonStats" }
+        recent:
+          type: array
+          items: { $ref: "#/components/schemas/ResolvedPrediction" }
+        totalsAcrossHorizons:
+          type: object
+          properties:
+            total: { type: integer }
+            hits: { type: integer }
+            misses: { type: integer }
+            flats: { type: integer }
+            accuracy: { type: number }
+          required: [total, hits, misses, flats, accuracy]
+      required: [horizons, recent, totalsAcrossHorizons]
